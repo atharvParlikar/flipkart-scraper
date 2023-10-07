@@ -14,6 +14,7 @@ pub struct ProductDetails {
     pub share_url: String,
     pub rating: Option<f32>,
     pub f_assured: bool,
+    pub highlights: Vec<String>,
 }
 
 impl ProductDetails {
@@ -23,6 +24,8 @@ impl ProductDetails {
         let ref title_selector = Selector::parse("title").unwrap();
         let ref script_selector = Selector::parse("script").unwrap();
         let ref img_selector = Selector::parse("img").unwrap();
+        let ref li_selector = Selector::parse("li").unwrap();
+        let ref ul_selector = Selector::parse("ul").unwrap();
 
         if !url
             .domain()
@@ -60,11 +63,21 @@ impl ProductDetails {
         details.in_stock = in_stock;
 
         let star_svg = include_str!("star.svg").trim();
-        let mut div_iterator = document.select(&div_selector);
+        let mut div_iterator = document.select(div_selector);
 
         while let Some(element) = div_iterator.next() {
             let text = element.text().next().unwrap_or_default();
             let text = text.trim();
+
+            if details.highlights.is_empty() && text.starts_with("Highlights") {
+                if let Some(ul_elem) = element.select(ul_selector).next() {
+                    let pointers = ul_elem.select(li_selector);
+                    for pointer in pointers {
+                        let text = pointer.text().collect::<String>();
+                        details.highlights.push(text);
+                    }
+                }
+            }
 
             if coming_soon {
                 // product won't contain price or rating
@@ -95,7 +108,7 @@ impl ProductDetails {
             }
 
             if details.original_price.is_none() && text.starts_with("₹") {
-                let mut internal_div_iterator = element.select(&div_selector);
+                let mut internal_div_iterator = element.select(div_selector);
                 while let Some(elem) = internal_div_iterator.next() {
                     let text = elem.text().collect::<String>();
                     let text = text.strip_prefix("₹").unwrap();
@@ -116,6 +129,11 @@ impl ProductDetails {
         'link_identifier: for element in document.select(script_selector) {
             let text = element.text().collect::<String>();
             if text.starts_with("window.__INITIAL_STATE__") {
+                if let Some((_, id_container)) = text.split_once("productId") {
+                    let pattern: &[_] = &['"', ':'];
+                    let id_container = id_container.trim().trim_matches(pattern);
+                    details.product_id = id_container.split_once('"').map(|(id, _)| id.into());
+                }
                 for content in text.split_inclusive("product.share.pp") {
                     if let Some(link_to_product) = content.rsplit_once("\"") {
                         // try parse url
