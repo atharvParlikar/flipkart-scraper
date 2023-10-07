@@ -5,6 +5,12 @@ use scraper::{Html, Selector};
 use url::Url;
 
 #[derive(Default, Debug)]
+pub struct Seller {
+    pub name: String,
+    pub rating: Option<f32>,
+}
+
+#[derive(Default, Debug)]
 pub struct ProductDetails {
     pub name: Option<String>,
     pub in_stock: bool,
@@ -15,6 +21,7 @@ pub struct ProductDetails {
     pub rating: Option<f32>,
     pub f_assured: bool,
     pub highlights: Vec<String>,
+    pub seller: Option<Seller>,
 }
 
 impl ProductDetails {
@@ -26,6 +33,8 @@ impl ProductDetails {
         let ref img_selector = Selector::parse("img").unwrap();
         let ref li_selector = Selector::parse("li").unwrap();
         let ref ul_selector = Selector::parse("ul").unwrap();
+        let ref seller_selector = Selector::parse("#sellerName").unwrap();
+        let ref span_selector = Selector::parse("span").unwrap();
 
         if !url
             .domain()
@@ -61,6 +70,39 @@ impl ProductDetails {
         let coming_soon = body.contains("Coming Soon");
         let in_stock = !(coming_soon || body.contains("currently out of stock"));
         details.in_stock = in_stock;
+
+        if in_stock {
+            let seller = document
+                .select(seller_selector)
+                .next()
+                .map(|seller_elem| {
+                    (
+                        seller_elem.select(span_selector).next(),
+                        seller_elem.select(div_selector).next(),
+                    )
+                })
+                .map(|(span_elem, div_elem)| {
+                    let name = span_elem
+                        .map(|elem| elem.text().next().map(|t| t.to_string()))
+                        .flatten()
+                        .or_else(|| {
+                            div_elem
+                                .map(|elem| elem.text().collect::<String>())
+                                .map(|name| name.trim().to_string())
+                        });
+                    if let Some(name) = name {
+                        let rating = div_elem
+                            .map(|elem| elem.text().collect::<String>())
+                            .map(|rating| rating.trim().parse::<f32>().ok())
+                            .flatten();
+                        Some(Seller { name, rating })
+                    } else {
+                        None
+                    }
+                })
+                .flatten();
+            details.seller = seller;
+        }
 
         let star_svg = include_str!("star.svg").trim();
         let mut div_iterator = document.select(div_selector);
