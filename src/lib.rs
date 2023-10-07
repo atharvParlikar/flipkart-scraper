@@ -11,6 +11,12 @@ pub struct Seller {
 }
 
 #[derive(Default, Debug)]
+pub struct Offer {
+    pub category: String,
+    pub description: String,
+}
+
+#[derive(Default, Debug)]
 pub struct ProductDetails {
     pub name: Option<String>,
     pub in_stock: bool,
@@ -23,6 +29,7 @@ pub struct ProductDetails {
     pub highlights: Vec<String>,
     pub seller: Option<Seller>,
     pub thumbnails: Vec<String>,
+    pub offers: Vec<Offer>,
 }
 
 impl ProductDetails {
@@ -138,6 +145,24 @@ impl ProductDetails {
                     for pointer in pointers {
                         let text = pointer.text().collect::<String>();
                         details.highlights.push(text);
+                    }
+                }
+            }
+
+            if in_stock && text.starts_with("Available offers") {
+                for offer in element.select(li_selector) {
+                    let mut offer_container = offer.select(span_selector);
+                    let category = offer_container
+                        .next()
+                        .map(|elem| elem.text().collect::<String>());
+                    let description = offer_container
+                        .next()
+                        .map(|elem| elem.text().collect::<String>());
+                    if let (Some(category), Some(description)) = (category, description) {
+                        details.offers.push(Offer {
+                            category,
+                            description,
+                        });
                     }
                 }
             }
