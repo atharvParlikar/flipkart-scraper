@@ -17,6 +17,18 @@ pub struct Offer {
 }
 
 #[derive(Default, Debug)]
+pub struct Specification {
+    pub name: String,
+    pub value: String,
+}
+
+#[derive(Default, Debug)]
+pub struct Specifications {
+    pub category: String,
+    pub specifications: Vec<Specification>,
+}
+
+#[derive(Default, Debug)]
 pub struct ProductDetails {
     pub name: Option<String>,
     pub in_stock: bool,
@@ -30,6 +42,7 @@ pub struct ProductDetails {
     pub seller: Option<Seller>,
     pub thumbnails: Vec<String>,
     pub offers: Vec<Offer>,
+    pub specifications: Vec<Specifications>,
 }
 
 impl ProductDetails {
@@ -43,6 +56,9 @@ impl ProductDetails {
         let ref ul_selector = Selector::parse("ul").unwrap();
         let ref seller_selector = Selector::parse("#sellerName").unwrap();
         let ref span_selector = Selector::parse("span").unwrap();
+        let ref table_selector = Selector::parse("table").unwrap();
+        let ref tr_selector = Selector::parse("tr").unwrap();
+        let ref td_selector = Selector::parse("td").unwrap();
 
         if !url
             .domain()
@@ -165,6 +181,47 @@ impl ProductDetails {
                         });
                     }
                 }
+            }
+
+            if details.specifications.is_empty() && text.starts_with("Specifications") {
+                details.specifications = element
+                    .select(table_selector)
+                    .filter_map(|table| {
+                        table
+                            .prev_sibling()
+                            .map(|elem| {
+                                if let Some(category) = elem.first_child() {
+                                    let category =
+                                        category.value().as_text().map(|t| t.to_string())?;
+                                    let x = table
+                                        .select(tr_selector)
+                                        .filter_map(|row| {
+                                            let mut td = row.select(td_selector);
+                                            let key =
+                                                td.next().map(|t| t.text().collect::<String>());
+                                            let val =
+                                                td.next().map(|t| t.text().collect::<String>());
+                                            if let (Some(key), Some(val)) = (key, val) {
+                                                Some(Specification {
+                                                    name: key,
+                                                    value: val,
+                                                })
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .collect();
+                                    Some(Specifications {
+                                        category,
+                                        specifications: x,
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .flatten()
+                    })
+                    .collect();
             }
 
             if coming_soon {
