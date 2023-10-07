@@ -125,7 +125,7 @@ impl ProductDetails {
             details.seller = seller;
         }
 
-        let star_svg = include_str!("star.svg").trim();
+        let star_svg = include_str!("star_base64_svg").trim();
         let mut div_iterator = document.select(div_selector);
 
         while let Some(element) = div_iterator.next() {
