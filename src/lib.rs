@@ -22,6 +22,7 @@ pub struct ProductDetails {
     pub f_assured: bool,
     pub highlights: Vec<String>,
     pub seller: Option<Seller>,
+    pub thumbnails: Vec<String>,
 }
 
 impl ProductDetails {
@@ -66,6 +67,26 @@ impl ProductDetails {
             .or(document.select(title_selector).next())
             .map(|title| title.text().collect::<String>());
         details.name = title;
+
+        // thumbnails
+        let unordered_lists = document.select(ul_selector);
+        for list in unordered_lists {
+            if !list.text().collect::<String>().trim().is_empty() {
+                continue;
+            }
+            let ref mut thumbnails = details.thumbnails;
+            for list_item in list.select(li_selector) {
+                let mut images = list_item.select(img_selector);
+                while let Some(image) = images.next() {
+                    if let Some(src) = image.value().attr("src") {
+                        thumbnails.push(src.into());
+                    }
+                }
+            }
+            if !thumbnails.is_empty() {
+                break;
+            }
+        }
 
         let coming_soon = body.contains("Coming Soon");
         let in_stock = !(coming_soon || body.contains("currently out of stock"));
