@@ -9,8 +9,7 @@ repository = "https://github.com/dvishal485/flipkart-scraper"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["serde_io"]
-serde_io = ["serde/serde_derive"]
+default = ["serde"]
 
 [dependencies]
 eyre = "0.6.8"
