@@ -1,10 +1,6 @@
-use crate::product_details::Offer;
-use crate::product_details::Seller;
-use crate::product_details::Specification;
-use crate::product_details::Specifications;
+use crate::product_details::{Offer, Seller, Specification, Specifications};
 use eyre::{bail, eyre, Result};
-use header::{HeaderMap, HeaderValue};
-use reqwest::{header, Client};
+use reqwest::Client;
 use scraper::{Html, Selector};
 pub use url::Url;
 
@@ -81,7 +77,7 @@ impl ProductDetails {
         }
 
         let client = Client::builder()
-            .default_headers(ProductDetails::build_headers())
+            .default_headers(crate::build_headers())
             .build()?;
 
         let webpage = client.get(url.to_owned()).send().await?;
@@ -137,10 +133,9 @@ impl ProductDetails {
                         seller_elem.select(div_selector).next(),
                     )
                 })
-                .map(|(span_elem, div_elem)| {
+                .and_then(|(span_elem, div_elem)| {
                     let name = span_elem
-                        .map(|elem| elem.text().next().map(|t| t.to_string()))
-                        .flatten()
+                        .and_then(|elem| elem.text().next().map(|t| t.to_string()))
                         .or_else(|| {
                             div_elem
                                 .map(|elem| elem.text().collect::<String>())
@@ -149,14 +144,12 @@ impl ProductDetails {
                     if let Some(name) = name {
                         let rating = div_elem
                             .map(|elem| elem.text().collect::<String>())
-                            .map(|rating| rating.trim().parse::<f32>().ok())
-                            .flatten();
+                            .and_then(|rating| rating.trim().parse::<f32>().ok());
                         Some(Seller { name, rating })
                     } else {
                         None
                     }
-                })
-                .flatten();
+                });
             details.seller = seller;
         }
 
@@ -182,18 +175,15 @@ impl ProductDetails {
                     let offer_container = offer.select(span_selector).next();
                     let mut category = offer_container.map(|e| e.text().collect::<String>());
                     let description = offer_container
-                        .map(|e| e.next_sibling())
-                        .flatten()
-                        .map(|e| {
+                        .and_then(|e| e.next_sibling())
+                        .and_then(|e| {
                             if e.value().as_element().map(|e| e.name()) == Some("span") {
                                 e.first_child()
-                                    .map(|t| t.value().as_text().map(|t| t.to_string()))
-                                    .flatten()
+                                    .and_then(|t| t.value().as_text().map(|t| t.to_string()))
                             } else {
                                 category.take()
                             }
-                        })
-                        .flatten();
+                        });
 
                     if let Some(description) = description {
                         details.offers.push(Offer {
@@ -210,7 +200,7 @@ impl ProductDetails {
                     .filter_map(|table| {
                         table
                             .prev_sibling()
-                            .map(|elem| {
+                            .and_then(|elem| {
                                 if let Some(category) = elem.first_child() {
                                     let category =
                                         category.value().as_text().map(|t| t.to_string())?;
@@ -240,7 +230,6 @@ impl ProductDetails {
                                     None
                                 }
                             })
-                            .flatten()
                     })
                     .collect();
             }
@@ -262,8 +251,7 @@ impl ProductDetails {
 
             if details.current_price.is_none() {
                 // test for f-assured product comes before price is set
-                let mut img = element.select(img_selector);
-                while let Some(img) = img.next() {
+                for img in element.select(img_selector) {
                     if let Some(img_src) = img.value().attr("src") {
                         if img_src.contains("fa_62673a.png") {
                             details.f_assured = true;
@@ -273,15 +261,14 @@ impl ProductDetails {
                 }
             }
 
-            if details.original_price.is_none() && text.starts_with("₹") {
-                let mut internal_div_iterator = element.select(div_selector);
-                while let Some(elem) = internal_div_iterator.next() {
+            if details.original_price.is_none() && text.starts_with('₹') {
+                for elem in element.select(div_selector) {
                     let text = elem.text().collect::<String>();
-                    let text = text.strip_prefix("₹").unwrap();
-                    if text.contains("₹") {
+                    let text = text.strip_prefix('₹').unwrap();
+                    if text.contains('₹') {
                         continue;
                     }
-                    let price_tag = text.replace(",", "").parse::<i32>().ok();
+                    let price_tag = text.replace(',', "").parse::<i32>().ok();
                     if details.current_price.is_none() {
                         details.current_price = price_tag;
                     } else {
@@ -301,7 +288,7 @@ impl ProductDetails {
                     details.product_id = id_container.split_once('"').map(|(id, _)| id.into());
                 }
                 for content in text.split_inclusive("product.share.pp") {
-                    if let Some(link_to_product) = content.rsplit_once("\"") {
+                    if let Some(link_to_product) = content.rsplit_once('"') {
                         // try parse url
                         if let Ok(link) = Url::parse(link_to_product.1) {
                             details.share_url = link.into();
@@ -316,27 +303,5 @@ impl ProductDetails {
         }
 
         Ok(details)
-    }
-
-    /// Builds the default headers for the client.
-    fn build_headers() -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            header::USER_AGENT,
-            HeaderValue::from_static(
-                "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/118.0",
-            ),
-        );
-        headers.insert(
-            header::ACCEPT_LANGUAGE,
-            HeaderValue::from_static("en-US,en;q=0.5"),
-        );
-        headers.insert(
-        header::ACCEPT,
-        HeaderValue::from_static(
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        ),
-    );
-        headers
     }
 }
