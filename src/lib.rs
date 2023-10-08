@@ -2,32 +2,57 @@ use eyre::{bail, eyre, Result};
 use header::{HeaderMap, HeaderValue};
 use reqwest::{header, Client};
 use scraper::{Html, Selector};
-use url::Url;
+pub use url::Url;
 
+/// Seller represents information about the primary
+/// seller of a Flipkart Product, their name and rating.
 #[derive(Default, Debug)]
 pub struct Seller {
     pub name: String,
     pub rating: Option<f32>,
 }
 
+/// Offer represents information about the offers
+/// available on a Flipkart Product.
+///
+/// The category are typically like: `Bank Offer`,
+/// `Exchange Offer`, `No Cost EMI Available`,
+/// `Patner Offer` etc.
 #[derive(Default, Debug)]
 pub struct Offer {
-    pub category: String,
+    pub category: Option<String>,
     pub description: String,
 }
 
+/// Specification represents a single specification.
 #[derive(Default, Debug)]
 pub struct Specification {
     pub name: String,
     pub value: String,
 }
 
+/// Specifications represents a group of specifications.
 #[derive(Default, Debug)]
 pub struct Specifications {
     pub category: String,
     pub specifications: Vec<Specification>,
 }
 
+/// ProductDetails represents the details of a Flipkart Product.
+///
+/// # Fetching Product Details
+/// ```rust 
+/// use std::error::Error;
+/// use flipkart_scraper::{ProductDetails, Url};
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn Error>> {
+///     let url = "https://www.flipkart.com/samsung-galaxy-f13-waterfall-blue-64-gb/p/itm583ef432b2b0c";
+///     let details = ProductDetails::fetch(Url::parse(url)?).await;
+///     println!("{:#?}", details);
+///     Ok(())
+/// }
+// ```
 #[derive(Default, Debug)]
 pub struct ProductDetails {
     pub name: Option<String>,
@@ -46,6 +71,20 @@ pub struct ProductDetails {
 }
 
 impl ProductDetails {
+    /// Fetches a product from the given url.
+    ///
+    /// ```rust 
+    /// use std::error::Error;
+    /// use flipkart_scraper::{ProductDetails, Url};
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn Error>> {
+    ///     let url = "https://www.flipkart.com/samsung-galaxy-f13-waterfall-blue-64-gb/p/itm583ef432b2b0c";
+    ///     let details = ProductDetails::fetch(Url::parse(url)?).await;
+    ///     println!("{:#?}", details);
+    ///     Ok(())
+    /// }
+    // ```
     pub async fn fetch(url: Url) -> Result<Self> {
         let ref div_selector = Selector::parse("div").unwrap();
         let ref h1_selector = Selector::parse("h1").unwrap();
@@ -167,14 +206,23 @@ impl ProductDetails {
 
             if in_stock && text.starts_with("Available offers") {
                 for offer in element.select(li_selector) {
-                    let mut offer_container = offer.select(span_selector);
-                    let category = offer_container
-                        .next()
-                        .map(|elem| elem.text().collect::<String>());
+                    let offer_container = offer.select(span_selector).next();
+                    let mut category = offer_container.map(|e| e.text().collect::<String>());
                     let description = offer_container
-                        .next()
-                        .map(|elem| elem.text().collect::<String>());
-                    if let (Some(category), Some(description)) = (category, description) {
+                        .map(|e| e.next_sibling())
+                        .flatten()
+                        .map(|e| {
+                            if e.value().as_element().map(|e| e.name()) == Some("span") {
+                                e.first_child()
+                                    .map(|t| t.value().as_text().map(|t| t.to_string()))
+                                    .flatten()
+                            } else {
+                                category.take()
+                            }
+                        })
+                        .flatten();
+
+                    if let Some(description) = description {
                         details.offers.push(Offer {
                             category,
                             description,
@@ -297,6 +345,7 @@ impl ProductDetails {
         Ok(details)
     }
 
+    /// Builds the default headers for the client.
     fn build_headers() -> HeaderMap {
         let mut headers = HeaderMap::new();
         headers.insert(
