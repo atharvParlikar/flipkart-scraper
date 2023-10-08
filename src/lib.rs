@@ -4,37 +4,42 @@ use reqwest::{header, Client};
 use scraper::{Html, Selector};
 pub use url::Url;
 
-/// Seller represents information about the primary
-/// seller of a Flipkart Product, their name and rating.
+/// Information about the seller of a Product.
 #[derive(Default, Debug)]
 pub struct Seller {
+    /// Name of the seller.
     pub name: String,
+    /// Rating of the seller.
     pub rating: Option<f32>,
 }
 
-/// Offer represents information about the offers
-/// available on a Flipkart Product.
-///
-/// The category are typically like: `Bank Offer`,
-/// `Exchange Offer`, `No Cost EMI Available`,
-/// `Patner Offer` etc.
+/// Information about the offers available on a Product.
 #[derive(Default, Debug)]
 pub struct Offer {
+    /// The category are typically like: `Bank Offer`,
+    /// `Exchange Offer`, `No Cost EMI Available`,
+    /// `Patner Offer` etc.
     pub category: Option<String>,
+    /// The description of the offer.
     pub description: String,
 }
 
-/// Specification represents a single specification.
+/// A single specification (key-value pair) of a Product.
 #[derive(Default, Debug)]
 pub struct Specification {
+    /// The name (key) of the specification.
     pub name: String,
+    /// The value of the specification.
     pub value: String,
 }
 
 /// Specifications represents a group of specifications.
 #[derive(Default, Debug)]
 pub struct Specifications {
+    /// The category of the specifications.
+    /// For example: `General`, `Display Features`, `Camera Features` etc.
     pub category: String,
+    /// The specifications.
     pub specifications: Vec<Specification>,
 }
 
@@ -44,18 +49,31 @@ pub struct Specifications {
 /// from the product url.
 #[derive(Default, Debug)]
 pub struct ProductDetails {
+    /// Product name
     pub name: Option<String>,
+    /// Whether the product is in stock or not.
     pub in_stock: bool,
+    /// Current price of the product.
     pub current_price: Option<i32>,
+    /// Original price of the product.
     pub original_price: Option<i32>,
+    /// Product ID
     pub product_id: Option<String>,
+    /// URL to product, usually shortened and cleaner.
     pub share_url: String,
+    /// Rating of the product.
     pub rating: Option<f32>,
+    /// Whether it is f-assured produtc or not.
     pub f_assured: bool,
+    /// Highlights of the product.
     pub highlights: Vec<String>,
+    /// Primary seller of the product.
     pub seller: Option<Seller>,
+    /// URL to thumbnails of the product.
     pub thumbnails: Vec<String>,
+    /// Offers available on the product.
     pub offers: Vec<Offer>,
+    /// Specifications of the product.
     pub specifications: Vec<Specifications>,
 }
 
