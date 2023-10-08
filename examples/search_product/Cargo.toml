@@ -1,5 +1,5 @@
 [package]
-name = "product_details"
+name = "search_product"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,4 +8,3 @@ edition = "2021"
 [dependencies]
 flipkart_scraper = { version = "0.1.11", path = "../.." }
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
-

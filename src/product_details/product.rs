@@ -82,7 +82,7 @@ impl ProductDetails {
 
         let webpage = client.get(url.to_owned()).send().await?;
         let body = webpage.text().await?;
-        if body.contains("has been moved or deleted") {
+        if body.contains("has been moved or deleted") || body.contains("not right!") {
             bail!("Link provided doesn't corresponds to any product");
         }
         if body.contains("Internal Server Error") {
@@ -171,16 +171,17 @@ impl ProductDetails {
                 for offer in element.select(li_selector) {
                     let offer_container = offer.select(span_selector).next();
                     let mut category = offer_container.map(|e| e.text().collect::<String>());
-                    let description = offer_container
-                        .and_then(|e| e.next_sibling())
-                        .and_then(|e| {
-                            if e.value().as_element().map(|e| e.name()) == Some("span") {
-                                e.first_child()
-                                    .and_then(|t| t.value().as_text().map(|t| t.to_string()))
-                            } else {
-                                category.take()
-                            }
-                        });
+                    let description =
+                        offer_container
+                            .and_then(|e| e.next_sibling())
+                            .and_then(|e| {
+                                if e.value().as_element().map(|e| e.name()) == Some("span") {
+                                    e.first_child()
+                                        .and_then(|t| t.value().as_text().map(|t| t.to_string()))
+                                } else {
+                                    category.take()
+                                }
+                            });
 
                     if let Some(description) = description {
                         details.offers.push(Offer {
@@ -195,38 +196,33 @@ impl ProductDetails {
                 details.specifications = element
                     .select(table_selector)
                     .filter_map(|table| {
-                        table
-                            .prev_sibling()
-                            .and_then(|elem| {
-                                if let Some(category) = elem.first_child() {
-                                    let category =
-                                        category.value().as_text().map(|t| t.to_string())?;
-                                    let x = table
-                                        .select(tr_selector)
-                                        .filter_map(|row| {
-                                            let mut td = row.select(td_selector);
-                                            let key =
-                                                td.next().map(|t| t.text().collect::<String>());
-                                            let val =
-                                                td.next().map(|t| t.text().collect::<String>());
-                                            if let (Some(key), Some(val)) = (key, val) {
-                                                Some(Specification {
-                                                    name: key,
-                                                    value: val,
-                                                })
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                        .collect();
-                                    Some(Specifications {
-                                        category,
-                                        specifications: x,
+                        table.prev_sibling().and_then(|elem| {
+                            if let Some(category) = elem.first_child() {
+                                let category = category.value().as_text().map(|t| t.to_string())?;
+                                let x = table
+                                    .select(tr_selector)
+                                    .filter_map(|row| {
+                                        let mut td = row.select(td_selector);
+                                        let key = td.next().map(|t| t.text().collect::<String>());
+                                        let val = td.next().map(|t| t.text().collect::<String>());
+                                        if let (Some(key), Some(val)) = (key, val) {
+                                            Some(Specification {
+                                                name: key,
+                                                value: val,
+                                            })
+                                        } else {
+                                            None
+                                        }
                                     })
-                                } else {
-                                    None
-                                }
-                            })
+                                    .collect();
+                                Some(Specifications {
+                                    category,
+                                    specifications: x,
+                                })
+                            } else {
+                                None
+                            }
+                        })
                     })
                     .collect();
             }
