@@ -4,8 +4,12 @@ use reqwest::{header, Client};
 use scraper::{Html, Selector};
 pub use url::Url;
 
-/// Information about the seller of a Product.
+#[cfg(feature = "serde_io")]
+use serde::{Deserialize, Serialize};
+
+#[cfg_attr(feature = "serde_io", derive(Serialize, Deserialize))]
 #[derive(Default, Debug)]
+/// Information about the seller of a Product.
 pub struct Seller {
     /// Name of the seller.
     pub name: String,
@@ -13,6 +17,7 @@ pub struct Seller {
     pub rating: Option<f32>,
 }
 
+#[cfg_attr(feature = "serde_io", derive(Serialize, Deserialize))]
 /// Information about the offers available on a Product.
 #[derive(Default, Debug)]
 pub struct Offer {
@@ -24,8 +29,9 @@ pub struct Offer {
     pub description: String,
 }
 
-/// A single specification (key-value pair) of a Product.
+#[cfg_attr(feature = "serde_io", derive(Serialize, Deserialize))]
 #[derive(Default, Debug)]
+/// A single specification (key-value pair) of a Product.
 pub struct Specification {
     /// The name (key) of the specification.
     pub name: String,
@@ -33,8 +39,9 @@ pub struct Specification {
     pub value: String,
 }
 
-/// Specifications represents a group of specifications.
+#[cfg_attr(feature = "serde_io", derive(Serialize, Deserialize))]
 #[derive(Default, Debug)]
+/// Specifications represents a group of specifications.
 pub struct Specifications {
     /// The category of the specifications.
     /// For example: `General`, `Display Features`, `Camera Features` etc.
@@ -43,11 +50,12 @@ pub struct Specifications {
     pub specifications: Vec<Specification>,
 }
 
+#[cfg_attr(feature = "serde_io", derive(Serialize, Deserialize))]
+#[derive(Default, Debug)]
 /// ProductDetails represents the details of a Flipkart Product.
 ///
 /// Use the `fetch` method to fetch the details of a product
 /// from the product url.
-#[derive(Default, Debug)]
 pub struct ProductDetails {
     /// Product name
     pub name: Option<String>,
@@ -80,7 +88,7 @@ pub struct ProductDetails {
 impl ProductDetails {
     /// Fetches a product from the given url.
     ///
-    /// ```rust 
+    /// ```rust
     /// use std::error::Error;
     /// use flipkart_scraper::{ProductDetails, Url};
     ///
