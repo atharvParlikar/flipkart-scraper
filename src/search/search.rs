@@ -25,7 +25,7 @@ pub struct ProductSearch {
 }
 
 impl ProductSearch {
-    pub async fn search(query: &str) -> Result<Self> {
+    pub async fn search(_query: &str) -> Result<Self> {
         let search_result = ProductSearch::default();
         Ok(search_result)
     }

@@ -55,18 +55,18 @@ impl ProductDetails {
     /// }
     // ```
     pub async fn fetch(url: Url) -> Result<Self> {
-        let ref div_selector = Selector::parse("div").unwrap();
-        let ref h1_selector = Selector::parse("h1").unwrap();
-        let ref title_selector = Selector::parse("title").unwrap();
-        let ref script_selector = Selector::parse("script").unwrap();
-        let ref img_selector = Selector::parse("img").unwrap();
-        let ref li_selector = Selector::parse("li").unwrap();
-        let ref ul_selector = Selector::parse("ul").unwrap();
-        let ref seller_selector = Selector::parse("#sellerName").unwrap();
-        let ref span_selector = Selector::parse("span").unwrap();
-        let ref table_selector = Selector::parse("table").unwrap();
-        let ref tr_selector = Selector::parse("tr").unwrap();
-        let ref td_selector = Selector::parse("td").unwrap();
+        let div_selector = &Selector::parse("div").unwrap();
+        let h1_selector = &Selector::parse("h1").unwrap();
+        let title_selector = &Selector::parse("title").unwrap();
+        let script_selector = &Selector::parse("script").unwrap();
+        let img_selector = &Selector::parse("img").unwrap();
+        let li_selector = &Selector::parse("li").unwrap();
+        let ul_selector = &Selector::parse("ul").unwrap();
+        let seller_selector = &Selector::parse("#sellerName").unwrap();
+        let span_selector = &Selector::parse("span").unwrap();
+        let table_selector = &Selector::parse("table").unwrap();
+        let tr_selector = &Selector::parse("tr").unwrap();
+        let td_selector = &Selector::parse("td").unwrap();
 
         if !url
             .domain()
@@ -105,10 +105,9 @@ impl ProductDetails {
             if !list.text().collect::<String>().trim().is_empty() {
                 continue;
             }
-            let ref mut thumbnails = details.thumbnails;
+            let thumbnails = &mut details.thumbnails;
             for list_item in list.select(li_selector) {
-                let mut images = list_item.select(img_selector);
-                while let Some(image) = images.next() {
+                for image in list_item.select(img_selector) {
                     if let Some(src) = image.value().attr("src") {
                         thumbnails.push(src.into());
                     }
@@ -154,9 +153,7 @@ impl ProductDetails {
         }
 
         let star_svg = include_str!("../star_base64_svg").trim();
-        let mut div_iterator = document.select(div_selector);
-
-        while let Some(element) = div_iterator.next() {
+        for element in document.select(div_selector) {
             let text = element.text().next().unwrap_or_default();
             let text = text.trim();
 
