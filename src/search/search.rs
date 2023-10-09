@@ -42,6 +42,18 @@ pub struct ProductSearch {
     pub results: Vec<SearchResult>,
 }
 
+impl std::ops::Deref for ProductSearch {
+    type Target = Vec<SearchResult>;
+    fn deref(&self) -> &Self::Target {
+        &self.results
+    }
+}
+impl std::ops::DerefMut for ProductSearch {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.results
+    }
+}
+
 impl ProductSearch {
     /// Searchs the query for a product on Flipkart.
     pub async fn search(query: String) -> Result<Self> {
