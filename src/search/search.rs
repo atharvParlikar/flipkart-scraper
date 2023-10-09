@@ -1,4 +1,4 @@
-use eyre::{bail, Result};
+use eyre::Result;
 use reqwest::Client;
 use scraper::{Html, Selector};
 
@@ -30,7 +30,6 @@ pub struct ProductSearch {
 }
 
 impl ProductSearch {
-    #[allow(unused_variables)]
     pub async fn search(query: String) -> Result<Self> {
         let search_url = url::Url::parse_with_params(
             "https://www.flipkart.com/search?marketplace=FLIPKART",
@@ -38,17 +37,7 @@ impl ProductSearch {
         )?;
 
         let div_selector = &Selector::parse("div").unwrap();
-        let h1_selector = &Selector::parse("h1").unwrap();
-        let title_selector = &Selector::parse("title").unwrap();
-        let script_selector = &Selector::parse("script").unwrap();
         let img_selector = &Selector::parse("img").unwrap();
-        let li_selector = &Selector::parse("li").unwrap();
-        let ul_selector = &Selector::parse("ul").unwrap();
-        let seller_selector = &Selector::parse("#sellerName").unwrap();
-        let span_selector = &Selector::parse("span").unwrap();
-        let table_selector = &Selector::parse("table").unwrap();
-        let tr_selector = &Selector::parse("tr").unwrap();
-        let td_selector = &Selector::parse("td").unwrap();
         let link_selector = &Selector::parse("a").unwrap();
 
         let client = Client::builder()
@@ -59,29 +48,9 @@ impl ProductSearch {
         let body = webpage.text().await?;
         let document = Html::parse_document(&body);
 
-        let Some(search_section) = document.select(&div_selector).find(|div| {
-            let child_span = div.select(span_selector).next();
-            child_span
-                .and_then(|s| s.text().next())
-                .map_or(false, |s| s.starts_with("Showing"))
-        }) else {
-            bail!("No search results found");
-        };
-        let search_section_divs = search_section
+        let search_results = document
             .select(div_selector)
-            .nth(1)
-            .ok_or(eyre::eyre!("No search results found"))?;
-        let product_class = search_section_divs
-            .value()
-            .attr("class")
-            .ok_or(eyre::eyre!("No search results found"))?;
-
-        // select using the selector of classes
-        let class_selector = &Selector::parse(&format!(".{}", product_class))
-            .map_err(|_| eyre::eyre!("Invalid class selector: {}", product_class))?;
-
-        let search_results = search_section
-            .select(class_selector)
+            .filter(|div| div.value().attr("data-id").is_some())
             .filter_map(|product| {
                 let mut link_iter = product.select(link_selector);
                 let mut link_elem = link_iter.next()?;

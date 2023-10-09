@@ -3,10 +3,12 @@ use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let query = "laptop charger hp 65W";
-    let details = ProductSearch::search(query.into())
-        .await
-        .map(|s| (s.results.len(), s));
-    println!("{:#?}", details);
+    let query = "samsung washing machine";
+    let details = ProductSearch::search(query.into()).await;
+    if let Ok(s) = details {
+        println!("{:#?}\n\nTotal {} search results.", s, s.results.len());
+    } else {
+        println!("{}", details.unwrap_err());
+    }
     Ok(())
 }
