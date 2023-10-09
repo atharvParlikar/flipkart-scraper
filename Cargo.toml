@@ -1,7 +1,7 @@
 [package]
 name = "flipkart_scraper"
 description = "Scrape Flipkart product details"
-version = "0.1.12"
+version = "0.1.13"
 edition = "2021"
 license = "GPL-3.0"
 repository = "https://github.com/dvishal485/flipkart-scraper"
@@ -16,5 +16,4 @@ eyre = "0.6.8"
 reqwest = "0.11.22"
 scraper = "0.17.1"
 serde = { version = "1.0.188", features = ["serde_derive"], optional = true }
-tokio = { version = "1.32.0", features = ["rt-multi-thread"] }
 url = "2.4.1"
