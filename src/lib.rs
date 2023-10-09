@@ -1,3 +1,12 @@
+//! Scrape flipkart product details and search results.
+//!
+//! `ProductDetails` can fetch details from product's URL
+//! and `ProductSearch` can search a product from a
+//! given search query from Flipkart.
+//!
+//! Feature Flags:
+//! - `serde`: Enables serde support for the structs. (default)
+
 mod product_details;
 mod search;
 use header::{HeaderMap, HeaderValue};
