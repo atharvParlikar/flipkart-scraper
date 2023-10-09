@@ -1,5 +1,3 @@
-use std::net::ToSocketAddrs;
-
 use eyre::{bail, Result};
 use reqwest::Client;
 use scraper::{Html, Selector};
@@ -10,9 +8,10 @@ use crate::ProductDetails;
 #[derive(Debug, Default)]
 pub struct SearchResult {
     product_name: String,
-    product_price: Option<i32>,
     product_link: String,
-    sponsored: bool,
+    thumbnail: String,
+    current_price: Option<i32>,
+    original_price: Option<i32>,
 }
 
 impl SearchResult {
@@ -36,7 +35,7 @@ impl ProductSearch {
         let search_url = url::Url::parse_with_params(
             "https://www.flipkart.com/search?marketplace=FLIPKART",
             &[("q", query.to_owned())],
-        );
+        )?;
 
         let div_selector = &Selector::parse("div").unwrap();
         let h1_selector = &Selector::parse("h1").unwrap();
@@ -56,7 +55,7 @@ impl ProductSearch {
             .default_headers(crate::build_headers())
             .build()?;
 
-        let webpage = client.get(search_url.to_owned()?).send().await?;
+        let webpage = client.get(search_url.to_owned()).send().await?;
         let body = webpage.text().await?;
         let document = Html::parse_document(&body);
 
@@ -68,11 +67,25 @@ impl ProductSearch {
         }) else {
             bail!("No search results found");
         };
+        let search_section_divs = search_section
+            .select(div_selector)
+            .nth(1)
+            .ok_or(eyre::eyre!("No search results found"))?;
+        let product_class = search_section_divs
+            .value()
+            .attr("class")
+            .ok_or(eyre::eyre!("No search results found"))?;
 
-        let x = search_section
-            .select(link_selector)
-            .filter_map(|link_elem| {
-                let link = link_elem.value().attr("href")?;
+        // select using the selector of classes
+        let class_selector = &Selector::parse(&format!(".{}", product_class))
+            .map_err(|_| eyre::eyre!("Invalid class selector: {}", product_class))?;
+
+        let search_results = search_section
+            .select(class_selector)
+            .filter_map(|product| {
+                let mut link_iter = product.select(link_selector);
+                let mut link_elem = link_iter.next()?;
+                let product_link = link_elem.value().attr("href")?;
                 let thumbnail = link_elem
                     .select(img_selector)
                     .next()
@@ -86,60 +99,58 @@ impl ProductSearch {
                         .collect::<String>(),
                 )
                 .ok()?;
-                println!("{:#?}", class_selector);
+                let name = link_elem
+                    .select(class_selector)
+                    .next()
+                    .and_then(|name_elem| {
+                        let name = name_elem.text().next();
+                        if name == Some("Sponsored") {
+                            name_elem.text().nth(1)
+                        } else {
+                            name
+                        }
+                    })
+                    .or_else(|| {
+                        link_elem = link_iter.next()?;
+                        link_elem.value().attr("title")
+                    })
+                    .or_else(|| link_elem.text().next())?;
 
                 let mut current_price = None;
                 let mut original_price = None;
-                for div in link_elem.select(div_selector) {
-                    if div.text().next() == Some("₹") {
-                        let price = div.text().next().unwrap().replace(',', "");
-                        if current_price.is_none() {
-                            current_price = price.parse::<i32>().ok();
-                        } else {
-                            original_price = price.parse::<i32>().ok();
-                            break;
+                for div in product.select(div_selector) {
+                    if let Some(price_tag) = div.text().next() {
+                        if price_tag.starts_with('₹') {
+                            let price_tag = div.text().collect::<String>();
+                            let price_tag = price_tag.strip_prefix('₹').unwrap();
+                            if price_tag.contains('₹') {
+                                continue;
+                            }
+                            let price = price_tag.replace(',', "");
+                            if current_price.is_none() {
+                                current_price = price.parse::<i32>().ok();
+                            } else {
+                                original_price = price.parse::<i32>().ok();
+                                break;
+                            }
                         }
                     }
                 }
 
-                println!(
-                    "{:?}",
-                    Some((link, thumbnail, current_price, original_price))
-                );
-                let name = link_elem
-                    .select(class_selector)
-                    .next()
-                    .and_then(|name_elem| name_elem.text().next())
-                    .or_else(|| link_elem.value().attr("title"));
-
-                if name.is_none() {
-                    /* let next_link = link_elem.next_sibling()?;
-                    let next_link = next_link.value().as_element()?;
-                    if next_link.name() != "a" {
-                        return None;
-                    }
-                    let next_link = next_link.classes();
-                    // select using the selector of classes
-                    let class_selector = &Selector::parse(
-                        &next_link
-                            .map(|sel| String::from('.') + sel)
-                            .collect::<String>(),
-                    );
-                    println!("{:#?}", elem_content); */
-                }
-
-                Some((name, link, thumbnail, current_price, original_price))
+                Some(SearchResult {
+                    product_name: name.into(),
+                    product_link: product_link.into(),
+                    thumbnail: thumbnail.into(),
+                    current_price,
+                    original_price,
+                })
             })
             .collect::<Vec<_>>();
 
-        println!("{:#?}\n{}", x, x.len());
-
-        let search_result = ProductSearch {
+        Ok(ProductSearch {
             query,
-            query_url: search_url?.to_string(),
-            results: Vec::new(),
-        };
-
-        Ok(search_result)
+            query_url: search_url.to_string(),
+            results: search_results,
+        })
     }
 }
