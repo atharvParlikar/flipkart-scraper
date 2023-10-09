@@ -85,7 +85,13 @@ impl ProductSearch {
             .filter_map(|product| {
                 let mut link_iter = product.select(link_selector);
                 let mut link_elem = link_iter.next()?;
-                let product_link = link_elem.value().attr("href")?;
+                let product_link: String = link_elem.value().attr("href").map(|link| {
+                    if link.starts_with('/') {
+                        String::from("https://flipkart.com") + link
+                    } else {
+                        link.into()
+                    }
+                })?;
                 let thumbnail = link_elem
                     .select(img_selector)
                     .next()
@@ -139,7 +145,7 @@ impl ProductSearch {
 
                 Some(SearchResult {
                     product_name: name.into(),
-                    product_link: product_link.into(),
+                    product_link,
                     thumbnail: thumbnail.into(),
                     current_price,
                     original_price,
