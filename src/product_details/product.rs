@@ -6,9 +6,9 @@ pub use url::Url;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Default, Debug)]
-/// ProductDetails represents the details of a Flipkart Product.
+/// The details of a Flipkart Product.
 ///
-/// Use the `fetch` method to fetch the details of a product
+/// Use the `ProductDetails::fetch` method to fetch the details of a product
 /// from the product url.
 pub struct ProductDetails {
     /// Product name

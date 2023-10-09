@@ -6,15 +6,22 @@ use crate::ProductDetails;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default)]
+/// Product found in search results
 pub struct SearchResult {
+    /// Name of the product
     product_name: String,
+    /// Link to the product
     product_link: String,
+    /// URL to the thumbnail of the product
     thumbnail: String,
+    /// Current price of the product
     current_price: Option<i32>,
+    /// Original price of the product
     original_price: Option<i32>,
 }
 
 impl SearchResult {
+    /// Get detailed information about the searched product.
     pub async fn fetch_product(&self) -> Result<ProductDetails> {
         let product_link = url::Url::parse(&self.product_link)?;
         ProductDetails::fetch(product_link).await
@@ -23,13 +30,20 @@ impl SearchResult {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug)]
+/// Search result of a product on Flipkart.
+///
+/// Use `ProductSearch::search` method to get the search results
 pub struct ProductSearch {
+    /// Original query used to search
     pub query: String,
+    /// URL of the search query
     pub query_url: String,
+    /// List of search results
     pub results: Vec<SearchResult>,
 }
 
 impl ProductSearch {
+    /// Searchs the query for a product on Flipkart.
     pub async fn search(query: String) -> Result<Self> {
         let search_url = url::Url::parse_with_params(
             "https://www.flipkart.com/search?marketplace=FLIPKART",
