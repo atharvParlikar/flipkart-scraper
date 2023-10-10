@@ -9,15 +9,15 @@ use crate::ProductDetails;
 /// Product found in search results
 pub struct SearchResult {
     /// Name of the product
-    product_name: String,
+    pub product_name: String,
     /// Link to the product
-    product_link: String,
+    pub product_link: String,
     /// URL to the thumbnail of the product
-    thumbnail: String,
+    pub thumbnail: String,
     /// Current price of the product
-    current_price: Option<i32>,
+    pub current_price: Option<i32>,
     /// Original price of the product
-    original_price: Option<i32>,
+    pub original_price: Option<i32>,
 }
 
 impl SearchResult {
