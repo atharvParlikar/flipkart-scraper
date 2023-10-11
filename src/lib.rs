@@ -7,8 +7,8 @@
 //! Feature Flags:
 //! - `serde`: Enables serde support for the structs. (default)
 
-mod product_details;
-mod search;
+pub mod product_details;
+pub mod search;
 use header::{HeaderMap, HeaderValue};
 pub use product_details::ProductDetails;
 use reqwest::header;

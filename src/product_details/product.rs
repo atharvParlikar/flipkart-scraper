@@ -2,7 +2,7 @@ use crate::product_details::{Offer, Seller, Specification, Specifications};
 use eyre::{bail, eyre, Result};
 use reqwest::Client;
 use scraper::{Html, Selector};
-pub use url::Url;
+use url::Url;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Default, Debug)]
