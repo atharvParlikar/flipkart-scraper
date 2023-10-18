@@ -220,13 +220,14 @@ checksum = "25cbce373ec4653f1a01a31e8a5e5ec0c622dc27ff9c4e6606eefef5cbbed4a5"
 
 [[package]]
 name = "flipkart_scraper"
-version = "0.1.11"
+version = "0.1.141"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0153f73f2740f68ca8b5e6de22e0c620d8b90bde563b1ede9388d24aac065ea2"
 dependencies = [
  "eyre",
  "reqwest",
  "scraper",
  "serde",
- "tokio",
  "url",
 ]
 
@@ -936,9 +937,9 @@ checksum = "d626bb9dae77e28219937af045c257c28bfd3f69333c512553507f5f9798cb76"
 
 [[package]]
 name = "rustix"
-version = "0.38.17"
+version = "0.38.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f25469e9ae0f3d0047ca8b93fc56843f38e6774f0914a107ff8b41be8be8e0b7"
+checksum = "745ecfa778e66b2b63c88a61cb36e0eea109e803b0b86bf9879fbc77c70e86ed"
 dependencies = [
  "bitflags 2.4.0",
  "errno",
